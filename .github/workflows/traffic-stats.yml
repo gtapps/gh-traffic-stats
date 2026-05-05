@@ -1,0 +1,39 @@
+name: Traffic stats
+on:
+  schedule:
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: traffic-stats
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: _stats_badges
+          path: badges-data
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Update traffic stats
+        env:
+          GH_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+          REPO: ${{ github.repository }}
+          BADGES_DIR: ${{ github.workspace }}/badges-data/.github/badges
+          METRICS: clones,views
+        run: node update-traffic.mjs
+      - name: Commit if changed
+        working-directory: badges-data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/badges
+          git diff --cached --quiet || (git commit -m "update traffic stats" && git pull --rebase && git push)
