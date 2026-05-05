@@ -19,7 +19,7 @@ The badges above are live, this repo runs its own script.
 
 ## Setup
 
-**1. Add a Personal Access Token.** The GitHub Traffic API needs push-equivalent access, which the default `GITHUB_TOKEN` lacks. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens) scoped to this repo only, with **Repository permissions → Administration: Read**. Save it under Repo → Settings → Secrets and variables → Actions → **Repository secrets** → New repository secret, named exactly `GH_TRAFFIC_TOKEN` (not an Environment or Organization secret).
+**1. Add a Personal Access Token.** The GitHub Traffic API needs push-equivalent access, which the default `GITHUB_TOKEN` lacks. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens) scoped to this repo only, with **Repository permissions → Administration: Read**. Save it under Repo → Settings → Secrets and variables → Actions → **Repository secrets** → New repository secret, named exactly `GH_TRAFFIC_STATS_TOKEN` (not an Environment or Organization secret).
 
 > **Note:** A [classic PAT](https://github.com/settings/tokens) with `repo` scope also works but grants access to all your repos — fine-grained is preferred.
 

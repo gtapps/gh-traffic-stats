@@ -25,7 +25,7 @@ jobs:
           node-version: "24"
       - name: Update gh-traffic-stats
         env:
-          GH_TOKEN: ${{ secrets.GH_TRAFFIC_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TRAFFIC_STATS_TOKEN }}
           REPO: ${{ github.repository }}
           BADGES_DIR: ${{ github.workspace }}/badges-data/.github/badges
           METRICS: clones,views

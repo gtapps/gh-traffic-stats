@@ -60,7 +60,7 @@ METRICS=clones,views \
 node .github/update-gh-traffic.mjs
 ```
 
-`GITHUB_TOKEN` is **not** sufficient — Traffic API needs push-level access. Use a fine-grained PAT scoped to the target repo with **Administration: Read** (preferred), or a classic PAT with `repo` scope as fallback. The workflow consumes it as `secrets.GH_TRAFFIC_TOKEN`.
+`GITHUB_TOKEN` is **not** sufficient — Traffic API needs push-level access. Use a fine-grained PAT scoped to the target repo with **Administration: Read** (preferred), or a classic PAT with `repo` scope as fallback. The workflow consumes it as `secrets.GH_TRAFFIC_STATS_TOKEN`.
 
 ## Self-hosting note
 
