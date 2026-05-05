@@ -19,7 +19,7 @@ The badges above are live, this repo runs its own script.
 
 ## How to set it up
 
-**1. Add a Personal Access Token.** The Official Github Traffic API needs `repo` scope, which the default `GITHUB_TOKEN` lacks. Create a [PAT](https://github.com/settings/tokens) and add it as a repo secret named `TRAFFIC_TOKEN`.
+**1. Add a Personal Access Token.** The GitHub Traffic API needs push-equivalent access, which the default `GITHUB_TOKEN` lacks. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens) scoped to this repo only, with **Repository permissions → Administration: Read**. Add it as a repo secret named `TRAFFIC_TOKEN`. (A [classic PAT](https://github.com/settings/tokens) with `repo` scope also works but grants access to all your repos — fine-grained is preferred.)
 
 **2. Create the orphan branch.**
 

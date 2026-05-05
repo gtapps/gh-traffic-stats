@@ -20,7 +20,7 @@ This is the single most important thing to understand before editing anything:
 - `main` holds the script and workflow. Never holds traffic data.
 - `_stats_badges` is an **orphan branch** (no shared history with `main`). It holds *only* `.github/badges/{clones,views}-history.json` and `.github/badges/{clones,views}.json`. It never merges anywhere.
 
-The workflow reflects this with two `actions/checkout@v4` steps: one for `main` (default), one for `_stats_badges` into `badges-data/`. The script reads/writes `BADGES_DIR` which points into the second checkout. Commits land on `_stats_badges`, not `main`.
+The workflow reflects this with two `actions/checkout@v6` steps: one for `main` (default), one for `_stats_badges` into `badges-data/`. The script reads/writes `BADGES_DIR` which points into the second checkout. Commits land on `_stats_badges`, not `main`.
 
 When testing locally, mirror this with `git worktree add /tmp/badges _stats_badges` — see README "Local testing".
 
@@ -60,7 +60,7 @@ METRICS=clones,views \
 node update-traffic.mjs
 ```
 
-`GITHUB_TOKEN` is **not** sufficient — Traffic API needs push access, so the workflow uses `secrets.TRAFFIC_TOKEN` (a PAT with `repo` scope).
+`GITHUB_TOKEN` is **not** sufficient — Traffic API needs push-level access. Use a fine-grained PAT scoped to the target repo with **Administration: Read** (preferred), or a classic PAT with `repo` scope as fallback. The workflow consumes it as `secrets.TRAFFIC_TOKEN`.
 
 ## Self-hosting note
 
