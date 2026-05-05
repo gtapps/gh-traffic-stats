@@ -14,12 +14,12 @@ import { pathToFileURL } from "node:url";
  * @property {number} baseline_uniques Pre-tracking uniques added to sum(daily.uniques)
  * @property {string} baseline_date YYYY-MM-DD note for when baseline was last set
  * @property {DailyEntry[]} daily Sorted ascending by timestamp
- * @property {number} total Recomputed every run as baseline + sum(daily.count)
- * @property {number} total_uniques Recomputed every run
+ * @property {number} [total] Recomputed every run as baseline + sum(daily.count)
+ * @property {number} [total_uniques] Recomputed every run
  *
  * @typedef {Object} MetricSpec
  * @property {string} apiPath GitHub Traffic API path segment under /repos/{repo}/
- * @property {"clones" | "views"} arrayKey Field on the API payload that holds the daily array
+ * @property {string} arrayKey Field on the API payload that holds the daily array
  * @property {string} historyFile
  * @property {string} badgeFile
  * @property {string} defaultLabel
@@ -75,11 +75,13 @@ export const formatMessage = (n) =>
  * @returns {DailyEntry[]}
  */
 export function mergeDaily(existing, apiSeries) {
-  const byTs = Object.fromEntries(existing.map((d) => [d.timestamp, d]));
+  /** @type {Record<string, DailyEntry>} */
+  const byTs = {};
+  for (const d of existing) byTs[d.timestamp] = d;
   for (const { timestamp, count, uniques } of apiSeries) {
     byTs[timestamp] = { timestamp, count, uniques };
   }
-  return Object.values(byTs).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  return Object.values(byTs).sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1));
 }
 
 const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;
@@ -88,10 +90,14 @@ if (isMain) {
   const token = requireEnv(process.env.GH_TOKEN, "GH_TOKEN");
   const repo = requireEnv(process.env.REPO, "REPO");
   const badgesDir = requireEnv(process.env.BADGES_DIR, "BADGES_DIR");
-  const enabled = (process.env.METRICS ?? "clones,views")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const enabled = [
+    ...new Set(
+      (process.env.METRICS ?? "clones,views")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    ),
+  ];
 
   for (const name of enabled) {
     if (!METRICS[name]) {

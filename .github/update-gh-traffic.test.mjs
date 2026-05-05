@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatMessage, mergeDaily } from "./update-traffic.mjs";
+import { formatMessage, mergeDaily } from "./update-gh-traffic.mjs";
 
 test("formatMessage: under 1000 returns the number as a string", () => {
   assert.equal(formatMessage(0), "0");
