@@ -13,23 +13,26 @@ GitHub's Official [Traffic API](https://docs.github.com/en/rest/metrics/traffic)
 
 ## Solution
 
-A GitHub Actions workflow runs daily inside your repo, saves each day's clone and view counts, and keeps your README badges showing the all-time totals. Two files to copy to your repo: the workflow and the script it runs.
+A GitHub Actions workflow runs daily inside your repo, saves each day's clone and view counts, and keeps your README badges showing the all-time totals. Copy two files into your repo — `update-traffic.mjs` and `.github/workflows/traffic-stats.yml` — and you're done.
 
 The badges above are live, this repo runs its own script.
 
-## How to set it up
+## Setup
 
-**1. Add a Personal Access Token.** The GitHub Traffic API needs push-equivalent access, which the default `GITHUB_TOKEN` lacks. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens) scoped to this repo only, with **Repository permissions → Administration: Read**. Add it as a repo secret named `TRAFFIC_TOKEN`. (A [classic PAT](https://github.com/settings/tokens) with `repo` scope also works but grants access to all your repos — fine-grained is preferred.)
+**1. Add a Personal Access Token.** The GitHub Traffic API needs push-equivalent access, which the default `GITHUB_TOKEN` lacks. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens) scoped to this repo only, with **Repository permissions → Administration: Read**. Save it under Repo → Settings → Secrets and variables → Actions → **Repository secrets** → New repository secret, named exactly `TRAFFIC_TOKEN` (not an Environment or Organization secret).
 
-**2. Create the orphan branch.**
+> **Note:** A [classic PAT](https://github.com/settings/tokens) with `repo` scope also works but grants access to all your repos — fine-grained is preferred.
+
+**2. Create the orphan branch.** It starts empty — your `main` files are untouched.
 
 ```bash
-git checkout --orphan _stats_badges
-git rm -rf .
+git switch --orphan _stats_badges
 git commit --allow-empty -m "init traffic-stats"
 git push -u origin _stats_badges
-git checkout main
+git switch main
 ```
+
+The script auto-seeds the history files on first run, so the branch can stay empty until then.
 
 **3. Copy the two files into your repo.**
 
@@ -42,7 +45,9 @@ git commit -m "add gh-traffic-stats"
 git push
 ```
 
-**4. Trigger the first run in Github.** Repo → Actions → Traffic stats → Run workflow. The script auto-seeds the history files on the orphan branch.
+**4. Trigger the first run in Github.** Repo → Actions → Traffic stats → Run workflow → Run workflow.
+
+> **Note:** Pick **main** in the "Use workflow from" dropdown — the workflow only lives there.
 
 **5. Add the badges to your README.**
 
@@ -76,7 +81,7 @@ If your repo had clones or views before you installed this, the badges would oth
 }
 ```
 
-`total` is recomputed every run as `baseline + sum(daily)`, so you don't need to touch it. `baseline_date` is just a note to yourself.
+`total` is recomputed every run as `baseline + sum(daily)`, so you don't need to touch it. `baseline_date` records the cutoff before which history was captured manually — useful as a lower bound when auditing totals later.
 
 ## License
 
