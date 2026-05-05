@@ -53,6 +53,8 @@ git push
 
 **5. Add the badges to your README.**
 
+Replace `<OWNER>` and `<REPO>` with your GitHub username and repository name.
+
 ```markdown
 ![Clones](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<OWNER>/<REPO>/_gh_traffic_stats/.github/badges/clones.json)
 ![Views](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<OWNER>/<REPO>/_gh_traffic_stats/.github/badges/views.json)
