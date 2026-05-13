@@ -1,0 +1,115 @@
+name: 'gh-traffic-stats'
+description: 'Permanent clones and views badges for your GitHub repo'
+author: 'gtapps'
+branding:
+  icon: 'bar-chart-2'
+  color: 'blue'
+inputs:
+  token:
+    description: 'PAT with Administration:Read on this repo (Traffic API requires push-equivalent access; GITHUB_TOKEN does NOT work)'
+    required: true
+  metrics:
+    description: 'Comma-separated metrics to track'
+    required: false
+    default: 'clones,views'
+  badges-branch:
+    description: 'Orphan branch that holds badge JSON files'
+    required: false
+    default: '_gh_traffic_stats'
+  badges-dir:
+    description: 'Relative path within the badges branch where JSON files live (no leading slash, no ..)'
+    required: false
+    default: '.github/badges'
+  clones-label:
+    description: 'Shields.io label for the clones badge'
+    required: false
+    default: 'Clones'
+  clones-color:
+    description: 'Shields.io color for the clones badge'
+    required: false
+    default: 'blue'
+  views-label:
+    description: 'Shields.io label for the views badge'
+    required: false
+    default: 'Views'
+  views-color:
+    description: 'Shields.io color for the views badge'
+    required: false
+    default: 'green'
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      shell: bash
+      env:
+        BADGES_DIR_INPUT: ${{ inputs.badges-dir }}
+        BRANCH_INPUT: ${{ inputs.badges-branch }}
+      run: |
+        case "$BADGES_DIR_INPUT" in
+          /*|*..*) echo "::error::badges-dir must be a relative path without '..'" >&2; exit 1 ;;
+        esac
+        case "$BRANCH_INPUT" in
+          ''|-*|*' '*) echo "::error::badges-branch must be non-empty, no leading dash, no spaces" >&2; exit 1 ;;
+        esac
+
+    - name: Ensure orphan branch exists
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        BRANCH: ${{ inputs.badges-branch }}
+      run: |
+        REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+        if git ls-remote --exit-code --heads "$REMOTE" "refs/heads/${BRANCH}" >/dev/null 2>&1; then
+          echo "Branch ${BRANCH} exists, skipping bootstrap."
+          exit 0
+        fi
+        echo "Creating orphan branch ${BRANCH}"
+        tmp=$(mktemp -d)
+        cd "$tmp"
+        git init -q -b "$BRANCH"
+        git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q --allow-empty -m "init ${BRANCH}"
+        git remote add origin "$REMOTE"
+        git push -q origin "$BRANCH"
+
+    - uses: actions/checkout@v6.0.2
+      with:
+        ref: ${{ inputs.badges-branch }}
+        path: badges-data
+
+    - uses: actions/setup-node@v6.4.0
+      with:
+        node-version: '24'
+
+    - name: Update traffic stats
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        BADGES_DIR_INPUT: ${{ inputs.badges-dir }}
+        METRICS: ${{ inputs.metrics }}
+        CLONES_LABEL: ${{ inputs.clones-label }}
+        CLONES_COLOR: ${{ inputs.clones-color }}
+        VIEWS_LABEL: ${{ inputs.views-label }}
+        VIEWS_COLOR: ${{ inputs.views-color }}
+      run: |
+        export BADGES_DIR="${GITHUB_WORKSPACE}/badges-data/${BADGES_DIR_INPUT}"
+        node "${GITHUB_ACTION_PATH}/update-gh-traffic.mjs"
+
+    - name: Commit if changed
+      working-directory: badges-data
+      shell: bash
+      env:
+        BADGES_DIR_INPUT: ${{ inputs.badges-dir }}
+      run: |
+        set -euo pipefail
+        git config user.name  "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -- "$BADGES_DIR_INPUT"
+        if ! git diff --cached --quiet; then
+          git commit -m "update gh-traffic-stats"
+          git pull --rebase
+          git push
+        fi

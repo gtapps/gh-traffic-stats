@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository shape
 
-Source files (everything Actions-related lives under `.github/`):
-
-- `.github/update-gh-traffic.mjs` — Node ESM script, no dependencies, requires Node 24+ (uses built-in `fetch`).
-- `.github/update-gh-traffic.test.mjs` — `node:test` suite for `formatMessage` and `mergeDaily` (the only pure functions). Integration is covered by `workflow_dispatch`.
-- `.github/workflows/gh-traffic-stats.yml` — daily cron (`30 0 * * *` UTC) plus `workflow_dispatch`.
-- `.github/workflows/test.yml` — runs `node --test .github/update-gh-traffic.test.mjs` on push and PR.
+- `action.yml` — composite action manifest at repo root; the entry point for `uses: gtapps/gh-traffic-stats@v1`.
+- `update-gh-traffic.mjs` — Node ESM script, no dependencies, requires Node 24+ (uses built-in `fetch`).
+- `update-gh-traffic.test.mjs` — `node:test` suite for `formatMessage` and `mergeDaily` (the only pure functions). Integration is covered by `workflow_dispatch`.
+- `.github/workflows/gh-traffic-stats.yml` — daily cron (`30 0 * * *` UTC) plus `workflow_dispatch`; dogfoods the action via `uses: ./`.
+- `.github/workflows/test.yml` — runs `node --test update-gh-traffic.test.mjs` on push and PR.
+- `.github/dependabot.yml` — monthly Dependabot bumps for pinned `actions/checkout` and `actions/setup-node` versions.
 
 No `package.json`, no build, no linter. Tests run via `node --test` (built-in, zero deps). Don't add a `package.json` unless genuinely required.
 
@@ -17,12 +17,12 @@ No `package.json`, no build, no linter. Tests run via `node --test` (built-in, z
 
 This is the single most important thing to understand before editing anything:
 
-- `main` holds the script and workflow. Never holds traffic data.
+- `main` holds `action.yml`, the script, and workflows. Never holds traffic data.
 - `_gh_traffic_stats` is an **orphan branch** (no shared history with `main`). It holds *only* `.github/badges/{clones,views}-history.json` and `.github/badges/{clones,views}.json`. It never merges anywhere.
 
-The workflow reflects this with two `actions/checkout@v6` steps: one for `main` (default), one for `_gh_traffic_stats` into `badges-data/`. The script reads/writes `BADGES_DIR` which points into the second checkout. Commits land on `_gh_traffic_stats`, not `main`.
+The composite action does two checkouts: the default checkout (`main`) happens in the caller's workflow before `uses: ./`, and then the action itself checks out `_gh_traffic_stats` into `badges-data/`. The script reads/writes `BADGES_DIR` which points into the second checkout. Commits land on `_gh_traffic_stats`, not `main`.
 
-When testing locally, mirror this with `git worktree add /tmp/badges _gh_traffic_stats` — see README "Local testing".
+When testing locally, mirror this with `git worktree add /tmp/badges _gh_traffic_stats` — see CONTRIBUTING.md "Local testing".
 
 ## How the upsert works
 
@@ -45,7 +45,7 @@ If `historyPath` doesn't exist (e.g. fresh empty `_gh_traffic_stats` branch), th
 
 ## Adding a new metric
 
-The `METRICS` registry at the top of `.github/update-gh-traffic.mjs` defines each metric. Each entry needs `apiPath`, `arrayKey`, `historyFile`, `badgeFile`, plus default label/color and the env var names that override them. The GitHub Traffic API only exposes clones and views, so adding a third metric means a different API endpoint — check it returns the same `[{ timestamp, count, uniques }]` shape, otherwise the upsert loop needs adjusting.
+The `METRICS` registry at the top of `update-gh-traffic.mjs` defines each metric. Each entry needs `apiPath`, `arrayKey`, `historyFile`, `badgeFile`, plus default label/color and the env var names that override them. The GitHub Traffic API only exposes clones and views, so adding a third metric means a different API endpoint — check it returns the same `[{ timestamp, count, uniques }]` shape, otherwise the upsert loop needs adjusting.
 
 History files for new metrics auto-seed on first run, so no manual file creation needed on `_gh_traffic_stats`.
 
@@ -57,7 +57,7 @@ GH_TOKEN=<PAT-with-repo-scope> \
 REPO=<owner>/<repo> \
 BADGES_DIR=/tmp/badges/.github/badges \
 METRICS=clones,views \
-node .github/update-gh-traffic.mjs
+node update-gh-traffic.mjs
 ```
 
 `GITHUB_TOKEN` is **not** sufficient — Traffic API needs push-level access. Use a fine-grained PAT scoped to the target repo with **Administration: Read** (preferred), or a classic PAT with `repo` scope as fallback. The workflow consumes it as `secrets.GH_TRAFFIC_STATS_TOKEN`.

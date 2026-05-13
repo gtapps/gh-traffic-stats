@@ -11,4 +11,4 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
-      - run: node --test .github/update-gh-traffic.test.mjs
+      - run: node --test update-gh-traffic.test.mjs

@@ -13,41 +13,49 @@ GitHub's Official [Traffic API](https://docs.github.com/en/rest/metrics/traffic)
 
 ## Solution
 
-A GitHub Actions workflow runs daily inside your repo, saves each day's clone and view counts, and keeps your README badges showing the all-time totals. Copy two files into your repo's `.github/` folder — `.github/update-gh-traffic.mjs` and `.github/workflows/gh-traffic-stats.yml` — and you're done.
+A GitHub Actions workflow runs daily inside your repo, saves each day's clone and view counts, and keeps your README badges showing the all-time totals. Add the workflow below to your repo — that's it.
 
-The badges above are live, this repo runs its own script.
+The badges above are live; this repo runs its own action.
 
 ## Setup
 
-**1. Add a Personal Access Token.** The GitHub Traffic API needs push-equivalent access, which the default `GITHUB_TOKEN` lacks. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens) scoped to this repo only, with **Repository permissions → Administration: Read**.
+**1. Add a Personal Access Token.** The GitHub Traffic API needs push-equivalent access, which the default `GITHUB_TOKEN` lacks. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens) scoped to your repo only, with **Repository permissions → Administration: Read**.
 
-**2. Save it as a Repository Secret** In GitHub under Repo → Settings → Secrets and variables → Actions → **Repository secrets** → New repository secret, named exactly `GH_TRAFFIC_STATS_TOKEN` (not an Environment or Organization secret).
+**2. Save it as a Repository Secret.** In GitHub under Repo → Settings → Secrets and variables → Actions → **Repository secrets** → New repository secret, named exactly `GH_TRAFFIC_STATS_TOKEN` (not an Environment or Organization secret).
 
 > **Note:** A [classic PAT](https://github.com/settings/tokens) with `repo` scope also works but grants access to all your repos — fine-grained is preferred.
 
-**2. Create the orphan branch.** It starts empty — your `main` files are untouched.
+**3. Add the workflow to your repo.**
 
-```bash
-git switch --orphan _gh_traffic_stats
-git commit --allow-empty -m "init gh-traffic-stats"
-git push -u origin _gh_traffic_stats
-git switch main
+Create `.github/workflows/gh-traffic-stats.yml`:
+
+```yaml
+name: gh-traffic-stats
+on:
+  schedule:
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-traffic-stats
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: gtapps/gh-traffic-stats@v1
+        with:
+          token: ${{ secrets.GH_TRAFFIC_STATS_TOKEN }}
 ```
 
-The script auto-seeds the history files on first run, so the branch can stay empty until then.
+The action automatically creates the `_gh_traffic_stats` orphan branch on first run if it doesn't exist yet. No manual branch setup needed.
 
-**3. Copy the two files into your repo.**
-
-```bash
-mkdir -p .github/workflows
-curl -sSL https://raw.githubusercontent.com/gtapps/gh-traffic-stats/main/.github/update-gh-traffic.mjs -o .github/update-gh-traffic.mjs
-curl -sSL https://raw.githubusercontent.com/gtapps/gh-traffic-stats/main/.github/workflows/gh-traffic-stats.yml -o .github/workflows/gh-traffic-stats.yml
-git add .github/update-gh-traffic.mjs .github/workflows/gh-traffic-stats.yml
-git commit -m "add gh-traffic-stats"
-git push
-```
-
-**4. Trigger the first run in Github.** Repo → Actions → gh-traffic-stats → Run workflow → Run workflow.
+**4. Trigger the first run.** Repo → Actions → gh-traffic-stats → Run workflow → Run workflow.
 
 > **Note:** Pick **main** in the "Use workflow from" dropdown — the workflow only lives there.
 
@@ -64,11 +72,29 @@ Done. Every day the cron runs and the badges stay current.
 
 ## Customization
 
-All optional. All edited in `.github/workflows/gh-traffic-stats.yml`.
+All optional. Configure via `with:` inputs on the action step.
 
-- **Schedule.** Default is `30 0 * * *` (daily at 00:30 UTC). Change the `cron:` line.
-- **Labels and colors.** Set `CLONES_LABEL`, `CLONES_COLOR`, `VIEWS_LABEL`, `VIEWS_COLOR` in the `env:` block. Defaults: `Clones`/`blue`, `Views`/`green`. Any [shields.io color](https://shields.io/badges) works.
-- **One metric only.** Set `METRICS: clones` or `METRICS: views`.
+| Input | Default | Description |
+|---|---|---|
+| `metrics` | `clones,views` | Comma-separated metrics to track. Set to `clones` or `views` for one metric only. |
+| `badges-branch` | `_gh_traffic_stats` | Orphan branch that holds badge data. |
+| `badges-dir` | `.github/badges` | Path within the badges branch where JSON files live. |
+| `clones-label` | `Clones` | Shields.io label for the clones badge. |
+| `clones-color` | `blue` | Shields.io color for the clones badge. Any [shields.io color](https://shields.io/badges) works. |
+| `views-label` | `Views` | Shields.io label for the views badge. |
+| `views-color` | `green` | Shields.io color for the views badge. |
+
+Example with custom labels:
+
+```yaml
+      - uses: gtapps/gh-traffic-stats@v1
+        with:
+          token: ${{ secrets.GH_TRAFFIC_STATS_TOKEN }}
+          clones-label: 'Total clones'
+          clones-color: 'orange'
+          views-label: 'Total views'
+          views-color: 'purple'
+```
 
 ## Pre-tracking totals (baseline)
 
