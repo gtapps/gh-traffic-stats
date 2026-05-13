@@ -47,7 +47,6 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
       - uses: gtapps/gh-traffic-stats@v1
         with:
           token: ${{ secrets.GH_TRAFFIC_STATS_TOKEN }}
