@@ -15,7 +15,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v7
       - uses: ./
         with:
           token: ${{ secrets.GH_TRAFFIC_STATS_TOKEN }}
