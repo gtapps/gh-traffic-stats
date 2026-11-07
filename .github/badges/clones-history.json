@@ -952,8 +952,13 @@
       "timestamp": "2026-11-04T00:00:00Z",
       "count": 13,
       "uniques": 7
+    },
+    {
+      "timestamp": "2026-11-05T00:00:00Z",
+      "count": 2,
+      "uniques": 1
     }
   ],
-  "total": 1766,
-  "total_uniques": 973
+  "total": 1768,
+  "total_uniques": 974
 }
